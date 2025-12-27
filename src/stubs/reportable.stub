@@ -1,0 +1,27 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Intrfce\LaravelReportable\Reportable;
+
+class {{ class }} extends Reportable
+{
+    /**
+     * Create a new reportable instance.
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Define the query for this report.
+     */
+    public function query(): QueryBuilder|EloquentBuilder
+    {
+        // Return your query here, for example:
+        // return User::query()->select(['id', 'name', 'email', 'created_at']);
+    }
+}
