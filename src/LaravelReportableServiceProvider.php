@@ -21,6 +21,10 @@ class LaravelReportableServiceProvider extends ServiceProvider
                 __DIR__ . '/stubs' => base_path('stubs'),
             ], 'laravel-reportable-stubs');
 
+            $this->publishesMigrations([
+                __DIR__ . '/../database/migrations' => database_path('migrations'),
+            ], 'laravel-reportable-migrations');
+
             $this->commands([
                 MakeReportableCommand::class,
             ]);

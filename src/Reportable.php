@@ -2,25 +2,16 @@
 
 namespace Intrfce\LaravelReportable;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Intrfce\LaravelReportable\Enums\FilterComparator;
+use Intrfce\LaravelReportable\Models\ReportExport;
 use League\Csv\Writer;
 
-abstract class Reportable implements ShouldQueue
+abstract class Reportable
 {
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
-
     /**
      * The filters to apply to the query.
      *
@@ -47,6 +38,33 @@ abstract class Reportable implements ShouldQueue
      * Define the query for this report.
      */
     abstract public function query(): QueryBuilder|EloquentBuilder;
+
+    /**
+     * Dispatch this reportable as a queued export.
+     */
+    public function dispatch(): ReportExport
+    {
+        return ReportExport::fromReportable($this);
+    }
+
+    /**
+     * Get the built query with filters applied.
+     * This is public so the ReportExport model can access it.
+     */
+    public function getBuiltQuery(): QueryBuilder|EloquentBuilder
+    {
+        return $this->buildQuery();
+    }
+
+    /**
+     * Process the export (called by the job).
+     */
+    public function processExport(ReportExport $export): void
+    {
+        $query = $this->buildQuery();
+
+        $this->export($query, $export);
+    }
 
     /**
      * Get the filename for the export.
@@ -213,19 +231,9 @@ abstract class Reportable implements ShouldQueue
     }
 
     /**
-     * Execute the report job.
-     */
-    public function handle(): void
-    {
-        $query = $this->buildQuery();
-
-        $this->export($query);
-    }
-
-    /**
      * Export the query results to CSV.
      */
-    protected function export(QueryBuilder|EloquentBuilder $query): void
+    protected function export(QueryBuilder|EloquentBuilder $query, ReportExport $export): void
     {
         $storage = Storage::disk($this->disk());
         $path = $this->outputPath();
@@ -244,9 +252,9 @@ abstract class Reportable implements ShouldQueue
         $headerMap = $this->mapHeaders();
 
         if ($this->chunked) {
-            $this->exportChunked($query, $csv, $headerMap, $headersWritten);
+            $this->exportChunked($query, $csv, $headerMap, $headersWritten, $export);
         } else {
-            $this->exportAllAtOnce($query, $csv, $headerMap, $headersWritten);
+            $this->exportAllAtOnce($query, $csv, $headerMap, $headersWritten, $export);
         }
 
         // Move the temp file to the final destination
@@ -256,8 +264,10 @@ abstract class Reportable implements ShouldQueue
 
     /**
      * Convert a row to an array.
+     *
+     * @param  array|Model|\stdClass  $row
      */
-    protected function rowToArray(array|Model $row): array
+    protected function rowToArray(mixed $row): array
     {
         if ($row instanceof Model) {
             return $row->toArray();
@@ -290,9 +300,12 @@ abstract class Reportable implements ShouldQueue
         QueryBuilder|EloquentBuilder $query,
         Writer $csv,
         array $headerMap,
-        bool &$headersWritten
+        bool &$headersWritten,
+        ReportExport $export
     ): void {
-        $query->chunk($this->chunkSize(), function ($rows) use ($csv, $headerMap, &$headersWritten) {
+        $rowsProcessed = 0;
+
+        $query->chunk($this->chunkSize(), function ($rows) use ($csv, $headerMap, &$headersWritten, $export, &$rowsProcessed) {
             foreach ($rows as $row) {
                 $data = $this->rowToArray($row);
 
@@ -302,7 +315,10 @@ abstract class Reportable implements ShouldQueue
                 }
 
                 $csv->insertOne(array_values($data));
+                $rowsProcessed++;
             }
+
+            $export->updateProgress($rowsProcessed);
         });
     }
 
@@ -315,9 +331,14 @@ abstract class Reportable implements ShouldQueue
         QueryBuilder|EloquentBuilder $query,
         Writer $csv,
         array $headerMap,
-        bool &$headersWritten
+        bool &$headersWritten,
+        ReportExport $export
     ): void {
         $rows = $query->get();
+        $totalRows = $rows->count();
+        $rowsProcessed = 0;
+
+        $export->updateProgress(0, $totalRows);
 
         foreach ($rows as $row) {
             $data = $this->rowToArray($row);
@@ -328,6 +349,9 @@ abstract class Reportable implements ShouldQueue
             }
 
             $csv->insertOne(array_values($data));
+            $rowsProcessed++;
         }
+
+        $export->updateProgress($rowsProcessed, $totalRows);
     }
 }
