@@ -5,11 +5,14 @@ namespace Intrfce\LaravelReportable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 use Intrfce\LaravelReportable\Enums\FilterComparator;
+use League\Csv\Writer;
 
 abstract class Reportable implements ShouldQueue
 {
@@ -26,9 +29,111 @@ abstract class Reportable implements ShouldQueue
     protected array $filters = [];
 
     /**
+     * The storage disk to use for the export.
+     */
+    protected ?string $disk = null;
+
+    /**
+     * The output path for the CSV file.
+     */
+    protected ?string $outputPath = null;
+
+    /**
+     * Whether to use chunked processing.
+     */
+    protected bool $chunked = true;
+
+    /**
      * Define the query for this report.
      */
     abstract public function query(): QueryBuilder|EloquentBuilder;
+
+    /**
+     * Get the filename for the export.
+     * Override this method to customize the filename.
+     */
+    public function filename(): string
+    {
+        return 'export.csv';
+    }
+
+    /**
+     * Map column names to human-readable header names.
+     * Override this method to provide custom header labels.
+     * Return an array where keys are column names and values are header labels.
+     *
+     * @return array<string, string>
+     */
+    public function mapHeaders(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the chunk size for processing.
+     */
+    public function chunkSize(): int
+    {
+        return config('laravel-reportable.chunk_size', 1000);
+    }
+
+    /**
+     * Set the storage disk for the export.
+     */
+    public function toDisk(string $disk): static
+    {
+        $this->disk = $disk;
+
+        return $this;
+    }
+
+    /**
+     * Get the storage disk for the export.
+     */
+    public function disk(): string
+    {
+        return $this->disk ?? config('laravel-reportable.disk', 'local');
+    }
+
+    /**
+     * Set the output path for the CSV file.
+     */
+    public function toPath(string $path): static
+    {
+        $this->outputPath = $path;
+
+        return $this;
+    }
+
+    /**
+     * Get the full output path for the CSV file.
+     */
+    public function outputPath(): string
+    {
+        $basePath = $this->outputPath ?? config('laravel-reportable.output_path', 'reports');
+
+        return rtrim($basePath, '/') . '/' . $this->filename();
+    }
+
+    /**
+     * Enable chunked processing.
+     */
+    public function chunked(): static
+    {
+        $this->chunked = true;
+
+        return $this;
+    }
+
+    /**
+     * Disable chunked processing (process all at once).
+     */
+    public function allAtOnce(): static
+    {
+        $this->chunked = false;
+
+        return $this;
+    }
 
     /**
      * Set the filters to apply to the query.
@@ -118,11 +223,111 @@ abstract class Reportable implements ShouldQueue
     }
 
     /**
-     * Export the query results.
-     * Override this method to customize the export process.
+     * Export the query results to CSV.
      */
     protected function export(QueryBuilder|EloquentBuilder $query): void
     {
-        // To be implemented - CSV export logic
+        $storage = Storage::disk($this->disk());
+        $path = $this->outputPath();
+
+        // Ensure the directory exists
+        $directory = dirname($path);
+        if ($directory !== '.' && ! $storage->exists($directory)) {
+            $storage->makeDirectory($directory);
+        }
+
+        // Create a temporary file for writing
+        $tempFile = tempnam(sys_get_temp_dir(), 'reportable_');
+        $csv = Writer::createFromPath($tempFile, 'w+');
+
+        $headersWritten = false;
+        $headerMap = $this->mapHeaders();
+
+        if ($this->chunked) {
+            $this->exportChunked($query, $csv, $headerMap, $headersWritten);
+        } else {
+            $this->exportAllAtOnce($query, $csv, $headerMap, $headersWritten);
+        }
+
+        // Move the temp file to the final destination
+        $storage->put($path, file_get_contents($tempFile));
+        unlink($tempFile);
+    }
+
+    /**
+     * Convert a row to an array.
+     */
+    protected function rowToArray(array|Model $row): array
+    {
+        if ($row instanceof Model) {
+            return $row->toArray();
+        }
+
+        return (array) $row;
+    }
+
+    /**
+     * Build the header row from column names and the header map.
+     *
+     * @param  array<string>  $columns
+     * @param  array<string, string>  $headerMap
+     * @return array<string>
+     */
+    protected function buildHeaders(array $columns, array $headerMap): array
+    {
+        return array_map(
+            fn (string $column) => $headerMap[$column] ?? $column,
+            $columns
+        );
+    }
+
+    /**
+     * Export using chunked processing.
+     *
+     * @param  array<string, string>  $headerMap
+     */
+    protected function exportChunked(
+        QueryBuilder|EloquentBuilder $query,
+        Writer $csv,
+        array $headerMap,
+        bool &$headersWritten
+    ): void {
+        $query->chunk($this->chunkSize(), function ($rows) use ($csv, $headerMap, &$headersWritten) {
+            foreach ($rows as $row) {
+                $data = $this->rowToArray($row);
+
+                if (! $headersWritten) {
+                    $csv->insertOne($this->buildHeaders(array_keys($data), $headerMap));
+                    $headersWritten = true;
+                }
+
+                $csv->insertOne(array_values($data));
+            }
+        });
+    }
+
+    /**
+     * Export all rows at once.
+     *
+     * @param  array<string, string>  $headerMap
+     */
+    protected function exportAllAtOnce(
+        QueryBuilder|EloquentBuilder $query,
+        Writer $csv,
+        array $headerMap,
+        bool &$headersWritten
+    ): void {
+        $rows = $query->get();
+
+        foreach ($rows as $row) {
+            $data = $this->rowToArray($row);
+
+            if (! $headersWritten) {
+                $csv->insertOne($this->buildHeaders(array_keys($data), $headerMap));
+                $headersWritten = true;
+            }
+
+            $csv->insertOne(array_values($data));
+        }
     }
 }

@@ -4,6 +4,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Default Storage Disk
+    |--------------------------------------------------------------------------
+    |
+    | The default filesystem disk to use for storing exported CSV files.
+    |
+    */
+
+    'disk' => env('REPORTABLE_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Output Path
+    |--------------------------------------------------------------------------
+    |
+    | The default directory path within the disk where reports will be saved.
+    |
+    */
+
+    'output_path' => env('REPORTABLE_OUTPUT_PATH', 'reports'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Default Queue
     |--------------------------------------------------------------------------
     |
@@ -30,6 +52,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | The number of rows to process at a time when exporting large datasets.
+    | Set to a lower value if you're running into memory issues.
     |
     */
 

@@ -24,4 +24,27 @@ class {{ class }} extends Reportable
         // Return your query here, for example:
         // return User::query()->select(['id', 'name', 'email', 'created_at']);
     }
+
+    /**
+     * Get the filename for the export.
+     */
+    public function filename(): string
+    {
+        return 'export.csv';
+    }
+
+    /**
+     * Map column names to human-readable header names.
+     *
+     * @return array<string, string>
+     */
+    public function mapHeaders(): array
+    {
+        return [
+            // 'id' => 'ID',
+            // 'name' => 'Full Name',
+            // 'email' => 'Email Address',
+            // 'created_at' => 'Registered On',
+        ];
+    }
 }
