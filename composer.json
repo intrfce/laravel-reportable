@@ -1,0 +1,58 @@
+{
+  "name": "intrfce/laravel-reportable",
+  "description": "Run large queries and export them to CSV files for reports in Laravel.",
+  "keywords": [
+    "intrfce",
+    "laravel",
+    "reportable",
+    "reports",
+    "csv",
+    "export"
+  ],
+  "homepage": "https://github.com/intrfce/laravel-reportable",
+  "license": "MIT",
+  "type": "library",
+  "authors": [
+    {
+      "name": "Dan Matthews",
+      "email": "dan@danmatthews.me",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": "^8.2.0",
+    "laravel/framework": "^11.0 || ^12.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^8.21 || ^9.0 || ^10.0",
+    "pestphp/pest": "^2.32 || ^3.7",
+    "tightenco/duster": "^2.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Intrfce\\LaravelReportable\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Intrfce\\LaravelReportable\\Tests\\": "tests"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/pest",
+    "test-coverage": "vendor/bin/pest --coverage-html coverage"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Intrfce\\LaravelReportable\\LaravelReportableServiceProvider"
+      ]
+    }
+  }
+}

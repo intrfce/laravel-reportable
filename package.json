@@ -1,0 +1,26 @@
+{
+  "name": "laravel-reportable",
+  "version": "1.0.0",
+  "description": "Run large queries and export them to CSV files for reports in Laravel.",
+  "scripts": {
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "laravel",
+    "reportable",
+    "reports",
+    "csv",
+    "export"
+  ],
+  "author": "Dan Matthews",
+  "license": "MIT",
+  "devDependencies": {
+    "husky": "^8.0.0",
+    "lint-staged": "^15.0.2"
+  },
+  "lint-staged": {
+    "**/*.php*": [
+      "vendor/bin/duster fix"
+    ]
+  }
+}
