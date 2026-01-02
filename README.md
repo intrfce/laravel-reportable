@@ -149,19 +149,19 @@ Automatically capture filters from the current request URL:
 ```php
 // Captures filters from ?filters[0][column]=status&filters[0][operator]==&...
 $export = (new UserExport())
-    ->withUrlFilters()
+    ->withFiltersFromUrl()
     ->dispatch();
 
 // Capture from a specific group in the URL
 // e.g., ?user_report[0][column]=status&user_report[0][operator]==&...
 $export = (new UserExport())
-    ->withUrlFilters('user_report')
+    ->withFiltersFromUrl('user_report')
     ->dispatch();
 
 // Combine with programmatic filters
 $export = (new UserExport())
     ->addFilter(Filter::equals('type', 'premium'))
-    ->withUrlFilters('user_report')  // Merges URL filters with existing
+    ->withFiltersFromUrl('user_report')  // Merges URL filters with existing
     ->dispatch();
 ```
 

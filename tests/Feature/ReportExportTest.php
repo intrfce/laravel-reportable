@@ -188,7 +188,7 @@ it('correctly identifies running status', function () {
     expect($export->isRunning())->toBeFalse();
 });
 
-it('can capture filters from request using withUrlFilters', function () {
+it('can capture filters from request using withFiltersFromUrl', function () {
     Queue::fake();
 
     // Simulate a request with filters
@@ -198,14 +198,14 @@ it('can capture filters from request using withUrlFilters', function () {
         ],
     ]);
 
-    $report = (new UserReport)->withUrlFilters();
+    $report = (new UserReport)->withFiltersFromUrl();
 
     expect($report->getFilters())->toHaveCount(1);
     expect($report->getFilters()[0]->column)->toBe('status');
     expect($report->getFilters()[0]->value)->toBe('active');
 });
 
-it('can capture filters from request using withUrlFilters with a group name', function () {
+it('can capture filters from request using withFiltersFromUrl with a group name', function () {
     Queue::fake();
 
     // Simulate a request with multiple filter groups
@@ -218,7 +218,7 @@ it('can capture filters from request using withUrlFilters with a group name', fu
         ],
     ]);
 
-    $report = (new UserReport)->withUrlFilters('user_filters');
+    $report = (new UserReport)->withFiltersFromUrl('user_filters');
 
     expect($report->getFilters())->toHaveCount(1);
     expect($report->getFilters()[0]->column)->toBe('status');
@@ -235,7 +235,7 @@ it('merges url filters with existing filters', function () {
 
     $report = (new UserReport)
         ->addFilter(Filter::contains('name', 'john'))
-        ->withUrlFilters();
+        ->withFiltersFromUrl();
 
     expect($report->getFilters())->toHaveCount(2);
     expect($report->getFilters()[0]->column)->toBe('name');

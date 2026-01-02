@@ -173,7 +173,7 @@ abstract class Reportable
      *
      * @param  string|null  $group  The group name to look for in the request (e.g., 'users', 'orders')
      */
-    public function withUrlFilters(?string $group = null): static
+    public function withFiltersFromUrl(?string $group = null): static
     {
         $this->filters = array_merge(
             $this->filters,
