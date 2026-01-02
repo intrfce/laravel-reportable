@@ -142,6 +142,31 @@ $export = (new UserExport())
     ->dispatch();
 ```
 
+### Capturing Filters from URL
+
+Automatically capture filters from the current request URL:
+
+```php
+// Captures filters from ?filters[0][column]=status&filters[0][operator]==&...
+$export = (new UserExport())
+    ->withUrlFilters()
+    ->dispatch();
+
+// Capture from a specific group in the URL
+// e.g., ?user_report[0][column]=status&user_report[0][operator]==&...
+$export = (new UserExport())
+    ->withUrlFilters('user_report')
+    ->dispatch();
+
+// Combine with programmatic filters
+$export = (new UserExport())
+    ->addFilter(Filter::equals('type', 'premium'))
+    ->withUrlFilters('user_report')  // Merges URL filters with existing
+    ->dispatch();
+```
+
+This is useful when building filter UIs where users can configure filters via query parameters.
+
 ### Available Filter Methods
 
 ```php
@@ -307,6 +332,73 @@ foreach ($filters as $filter) {
 
 // Array access
 $first = $filters[0];
+```
+
+### Filter Groups
+
+Use groups to have multiple independent filter collections in the same URL. This is useful when you need to filter multiple datasets on the same page.
+
+```php
+// Create collections with group names
+$userFilters = FilterCollection::make([
+    Filter::equals('status', 'active'),
+], 'users');
+
+$orderFilters = FilterCollection::make([
+    Filter::greaterThan('total', 100),
+], 'orders');
+
+// Or set the group after creation
+$filters = FilterCollection::make([...])
+    ->withGroup('my_filters');
+
+// Get the group name
+$group = $filters->getGroup(); // 'my_filters'
+```
+
+#### Serializing Grouped Filters
+
+```php
+// Groups appear as their own keys in the URL
+$userFilters = FilterCollection::make([
+    Filter::equals('status', 'active'),
+], 'users');
+
+$url = $userFilters->appendToUrl('https://example.com/dashboard');
+// https://example.com/dashboard?users[0][column]=status&users[0][operator]==&users[0][value]=active
+
+// Multiple groups can coexist in the same URL
+$url = $userFilters->appendToUrl($url);
+$url = $orderFilters->appendToUrl($url);
+// https://example.com/dashboard?users[0][...]&orders[0][...]
+```
+
+#### Reading Grouped Filters from Request
+
+```php
+// In a controller - extract specific filter groups
+public function dashboard(Request $request)
+{
+    $userFilters = FilterCollection::fromRequest($request, 'users');
+    $orderFilters = FilterCollection::fromRequest($request, 'orders');
+
+    $userExport = (new UserExport())
+        ->withFilters($userFilters)
+        ->dispatch();
+
+    $orderExport = (new OrderExport())
+        ->withFilters($orderFilters)
+        ->dispatch();
+
+    // ...
+}
+```
+
+#### Reading from Query String with Groups
+
+```php
+$userFilters = FilterCollection::fromQueryString($queryString, 'users');
+$orderFilters = FilterCollection::fromQueryString($queryString, 'orders');
 ```
 
 ### Preserving Filters in Views

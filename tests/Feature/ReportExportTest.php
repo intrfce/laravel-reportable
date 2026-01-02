@@ -187,3 +187,57 @@ it('correctly identifies running status', function () {
     $export->markAsCompleted();
     expect($export->isRunning())->toBeFalse();
 });
+
+it('can capture filters from request using withUrlFilters', function () {
+    Queue::fake();
+
+    // Simulate a request with filters
+    $this->app['request']->merge([
+        'filters' => [
+            ['column' => 'status', 'operator' => '=', 'value' => 'active'],
+        ],
+    ]);
+
+    $report = (new UserReport)->withUrlFilters();
+
+    expect($report->getFilters())->toHaveCount(1);
+    expect($report->getFilters()[0]->column)->toBe('status');
+    expect($report->getFilters()[0]->value)->toBe('active');
+});
+
+it('can capture filters from request using withUrlFilters with a group name', function () {
+    Queue::fake();
+
+    // Simulate a request with multiple filter groups
+    $this->app['request']->merge([
+        'user_filters' => [
+            ['column' => 'status', 'operator' => '=', 'value' => 'active'],
+        ],
+        'other_filters' => [
+            ['column' => 'role', 'operator' => '=', 'value' => 'admin'],
+        ],
+    ]);
+
+    $report = (new UserReport)->withUrlFilters('user_filters');
+
+    expect($report->getFilters())->toHaveCount(1);
+    expect($report->getFilters()[0]->column)->toBe('status');
+});
+
+it('merges url filters with existing filters', function () {
+    Queue::fake();
+
+    $this->app['request']->merge([
+        'filters' => [
+            ['column' => 'status', 'operator' => '=', 'value' => 'active'],
+        ],
+    ]);
+
+    $report = (new UserReport)
+        ->addFilter(Filter::contains('name', 'john'))
+        ->withUrlFilters();
+
+    expect($report->getFilters())->toHaveCount(2);
+    expect($report->getFilters()[0]->column)->toBe('name');
+    expect($report->getFilters()[1]->column)->toBe('status');
+});

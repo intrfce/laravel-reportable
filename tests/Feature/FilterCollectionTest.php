@@ -323,3 +323,146 @@ it('handles null value filters', function () {
     expect($restored->all()[0]->comparator)->toBe(FilterComparator::IsNull);
     expect($restored->all()[1]->comparator)->toBe(FilterComparator::IsNotNull);
 });
+
+// Group functionality tests
+
+it('can create a collection with a group name', function () {
+    $collection = FilterCollection::make([
+        Filter::equals('status', 'active'),
+    ], 'user_filters');
+
+    expect($collection->getGroup())->toBe('user_filters');
+});
+
+it('can set a group name using withGroup', function () {
+    $collection = FilterCollection::make([
+        Filter::equals('status', 'active'),
+    ])->withGroup('order_filters');
+
+    expect($collection->getGroup())->toBe('order_filters');
+});
+
+it('uses group name in query string output', function () {
+    $collection = FilterCollection::make([
+        Filter::equals('status', 'active'),
+    ], 'my_custom_group');
+
+    $queryString = $collection->toQueryString();
+
+    expect($queryString)->toContain('my_custom_group');
+    expect($queryString)->not->toContain('filters%5B'); // default 'filters' key shouldn't appear
+});
+
+it('uses group name in query array output', function () {
+    $collection = FilterCollection::make([
+        Filter::equals('status', 'active'),
+    ], 'user_filters');
+
+    $queryArray = $collection->toQueryArray();
+
+    expect($queryArray)->toHaveKey('user_filters');
+    expect($queryArray)->not->toHaveKey('filters');
+});
+
+it('can create from query string with group name', function () {
+    $original = FilterCollection::make([
+        Filter::equals('status', 'active'),
+    ], 'user_filters');
+
+    $queryString = $original->toQueryString();
+    $restored = FilterCollection::fromQueryString($queryString, 'user_filters');
+
+    expect($restored->count())->toBe(1);
+    expect($restored->getGroup())->toBe('user_filters');
+    expect($restored->all()[0]->column)->toBe('status');
+});
+
+it('can create from request with group name', function () {
+    $request = Request::create('/test', 'GET', [
+        'user_filters' => [
+            ['column' => 'status', 'operator' => '=', 'value' => 'active'],
+        ],
+        'order_filters' => [
+            ['column' => 'total', 'operator' => '>', 'value' => '100'],
+        ],
+    ]);
+
+    $userFilters = FilterCollection::fromRequest($request, 'user_filters');
+    $orderFilters = FilterCollection::fromRequest($request, 'order_filters');
+
+    expect($userFilters->count())->toBe(1);
+    expect($userFilters->getGroup())->toBe('user_filters');
+    expect($userFilters->all()[0]->column)->toBe('status');
+
+    expect($orderFilters->count())->toBe(1);
+    expect($orderFilters->getGroup())->toBe('order_filters');
+    expect($orderFilters->all()[0]->column)->toBe('total');
+});
+
+it('can handle multiple filter groups in the same URL', function () {
+    $userFilters = FilterCollection::make([
+        Filter::equals('status', 'active'),
+    ], 'users');
+
+    $orderFilters = FilterCollection::make([
+        Filter::greaterThan('total', 100),
+    ], 'orders');
+
+    $url = 'https://example.com/reports';
+    $url = $userFilters->appendToUrl($url);
+    $url = $orderFilters->appendToUrl($url);
+
+    expect($url)->toContain('users');
+    expect($url)->toContain('orders');
+
+    // Parse and verify both groups can be extracted
+    parse_str(parse_url($url, PHP_URL_QUERY), $parsed);
+    expect($parsed)->toHaveKey('users');
+    expect($parsed)->toHaveKey('orders');
+});
+
+it('preserves group name when merging collections', function () {
+    $collection1 = FilterCollection::make([
+        Filter::equals('status', 'active'),
+    ], 'my_group');
+
+    $collection2 = FilterCollection::make([
+        Filter::contains('name', 'john'),
+    ], 'other_group');
+
+    $merged = $collection1->merge($collection2);
+
+    expect($merged->getGroup())->toBe('my_group');
+    expect($merged->count())->toBe(2);
+});
+
+it('preserves group name when creating from array', function () {
+    $data = [
+        ['column' => 'status', 'operator' => '=', 'value' => 'active'],
+    ];
+
+    $collection = FilterCollection::fromArray($data, 'custom_group');
+
+    expect($collection->getGroup())->toBe('custom_group');
+});
+
+it('preserves group name when creating from JSON', function () {
+    $json = '[{"column":"status","operator":"=","value":"active"}]';
+
+    $collection = FilterCollection::fromJson($json, 'json_group');
+
+    expect($collection->getGroup())->toBe('json_group');
+});
+
+it('returns empty collection with group when request has no matching group', function () {
+    $request = Request::create('/test', 'GET', [
+        'other_filters' => [
+            ['column' => 'status', 'operator' => '=', 'value' => 'active'],
+        ],
+    ]);
+
+    $collection = FilterCollection::fromRequest($request, 'user_filters');
+
+    expect($collection->isEmpty())->toBeTrue();
+    expect($collection->getGroup())->toBe('user_filters');
+});
