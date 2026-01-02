@@ -14,7 +14,7 @@ beforeEach(function () {
 });
 
 it('creates a report export when dispatching a reportable', function () {
-    $report = new UserReport();
+    $report = new UserReport;
     $export = $report->dispatch();
 
     expect($export)->toBeInstanceOf(ReportExport::class);
@@ -25,7 +25,7 @@ it('creates a report export when dispatching a reportable', function () {
 });
 
 it('stores the serialized reportable', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::equals('status', 'active'),
     ]);
 
@@ -38,7 +38,7 @@ it('stores the serialized reportable', function () {
 });
 
 it('stores the compiled SQL query', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::equals('status', 'active'),
     ]);
 
@@ -50,7 +50,7 @@ it('stores the compiled SQL query', function () {
 });
 
 it('dispatches the processing job', function () {
-    $report = new UserReport();
+    $report = new UserReport;
     $report->dispatch();
 
     Queue::assertPushed(ProcessReportExport::class);
@@ -59,7 +59,7 @@ it('dispatches the processing job', function () {
 it('can track progress', function () {
     Queue::fake();
 
-    $export = (new UserReport())->dispatch();
+    $export = (new UserReport)->dispatch();
 
     $export->updateProgress(50, 100);
 
@@ -71,7 +71,7 @@ it('can track progress', function () {
 it('can mark export as processing', function () {
     Queue::fake();
 
-    $export = (new UserReport())->dispatch();
+    $export = (new UserReport)->dispatch();
     $export->markAsProcessing();
 
     expect($export->status)->toBe(ReportExportStatus::Processing);
@@ -81,7 +81,7 @@ it('can mark export as processing', function () {
 it('can mark export as completed', function () {
     Queue::fake();
 
-    $export = (new UserReport())->dispatch();
+    $export = (new UserReport)->dispatch();
     $export->markAsCompleted();
 
     expect($export->status)->toBe(ReportExportStatus::Completed);
@@ -92,7 +92,7 @@ it('can mark export as completed', function () {
 it('can mark export as failed', function () {
     Queue::fake();
 
-    $export = (new UserReport())->dispatch();
+    $export = (new UserReport)->dispatch();
     $export->markAsFailed('Something went wrong');
 
     expect($export->status)->toBe(ReportExportStatus::Failed);
@@ -104,7 +104,7 @@ it('can mark export as failed', function () {
 it('can retry a failed export', function () {
     Queue::fake();
 
-    $export = (new UserReport())->dispatch();
+    $export = (new UserReport)->dispatch();
     $export->markAsFailed('Network error');
 
     expect($export->canRetry())->toBeTrue();
@@ -135,7 +135,7 @@ it('preserves constructor arguments when serializing', function () {
 });
 
 it('preserves filters when serializing', function () {
-    $report = (new ProductReport())
+    $report = (new ProductReport)
         ->withFilters([
             Filter::greaterThan('price', 100),
         ]);
@@ -150,7 +150,7 @@ it('preserves filters when serializing', function () {
 });
 
 it('preserves disk and path settings when serializing', function () {
-    $report = (new UserReport())
+    $report = (new UserReport)
         ->toDisk('s3')
         ->toPath('custom/exports');
 
@@ -168,7 +168,7 @@ it('preserves disk and path settings when serializing', function () {
 it('returns null for progress percentage when total is unknown', function () {
     Queue::fake();
 
-    $export = (new UserReport())->dispatch();
+    $export = (new UserReport)->dispatch();
     $export->updateProgress(50);
 
     expect($export->progressPercentage())->toBeNull();
@@ -177,7 +177,7 @@ it('returns null for progress percentage when total is unknown', function () {
 it('correctly identifies running status', function () {
     Queue::fake();
 
-    $export = (new UserReport())->dispatch();
+    $export = (new UserReport)->dispatch();
 
     expect($export->isRunning())->toBeTrue();
 

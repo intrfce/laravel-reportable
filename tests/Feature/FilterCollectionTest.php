@@ -261,7 +261,7 @@ it('works with the Reportable withFilters method', function () {
         Filter::equals('status', 'active'),
     ]);
 
-    $report = (new UserReport())->withFilters($collection);
+    $report = (new UserReport)->withFilters($collection);
 
     expect($report->getFilters())->toHaveCount(1);
 
@@ -270,7 +270,7 @@ it('works with the Reportable withFilters method', function () {
 });
 
 it('can get filter collection from reportable', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::equals('status', 'active'),
         Filter::contains('name', 'john'),
     ]);

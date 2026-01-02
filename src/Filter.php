@@ -93,20 +93,6 @@ class Filter
     }
 
     /**
-     * Convert the filter to an array representation.
-     *
-     * @return array{column: string, operator: string, value: mixed}
-     */
-    public function toArray(): array
-    {
-        return [
-            'column' => $this->column,
-            'operator' => $this->comparator->value,
-            'value' => $this->value,
-        ];
-    }
-
-    /**
      * Create a filter from an array representation.
      *
      * @param  array{column: string, operator: string, value?: mixed}  $data
@@ -120,5 +106,19 @@ class Filter
             comparator: $comparator,
             value: $data['value'] ?? null,
         );
+    }
+
+    /**
+     * Convert the filter to an array representation.
+     *
+     * @return array{column: string, operator: string, value: mixed}
+     */
+    public function toArray(): array
+    {
+        return [
+            'column' => $this->column,
+            'operator' => $this->comparator->value,
+            'value' => $this->value,
+        ];
     }
 }

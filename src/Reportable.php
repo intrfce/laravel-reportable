@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Intrfce\LaravelReportable\Enums\FilterComparator;
 use Intrfce\LaravelReportable\Models\ReportExport;
 use League\Csv\Writer;
+use stdClass;
 
 abstract class Reportable
 {
@@ -275,7 +276,7 @@ abstract class Reportable
     /**
      * Convert a row to an array.
      *
-     * @param  array|Model|\stdClass  $row
+     * @param  array|Model|stdClass  $row
      */
     protected function rowToArray(mixed $row): array
     {

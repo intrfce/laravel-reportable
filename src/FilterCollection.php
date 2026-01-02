@@ -3,6 +3,7 @@
 namespace Intrfce\LaravelReportable;
 
 use ArrayAccess;
+use ArrayIterator;
 use Countable;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ use Traversable;
  * @implements IteratorAggregate<int, Filter>
  * @implements Arrayable<int, array>
  */
-class FilterCollection implements ArrayAccess, Countable, IteratorAggregate, Arrayable, JsonSerializable
+class FilterCollection implements Arrayable, ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
     /**
      * The query string parameter name for filters.
@@ -37,6 +38,68 @@ class FilterCollection implements ArrayAccess, Countable, IteratorAggregate, Arr
     public static function make(array $filters = []): self
     {
         return new self($filters);
+    }
+
+    /**
+     * Create a collection from a query string.
+     */
+    public static function fromQueryString(string $queryString): self
+    {
+        parse_str($queryString, $parsed);
+
+        if (! isset($parsed[self::$queryParameter]) || ! is_array($parsed[self::$queryParameter])) {
+            return new self;
+        }
+
+        return self::fromArray($parsed[self::$queryParameter]);
+    }
+
+    /**
+     * Create a collection from an array of filter arrays.
+     *
+     * @param  array<int, array{column: string, operator: string, value?: mixed}>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        $filters = [];
+
+        foreach ($data as $filterData) {
+            if (isset($filterData['column'], $filterData['operator'])) {
+                $filters[] = Filter::fromArray($filterData);
+            }
+        }
+
+        return new self($filters);
+    }
+
+    /**
+     * Create a collection from a Laravel request.
+     */
+    public static function fromRequest(?Request $request = null): self
+    {
+        $request = $request ?? request();
+
+        $data = $request->input(self::$queryParameter, []);
+
+        if (! is_array($data)) {
+            return new self;
+        }
+
+        return self::fromArray($data);
+    }
+
+    /**
+     * Create a collection from JSON.
+     */
+    public static function fromJson(string $json): self
+    {
+        $data = json_decode($json, true);
+
+        if (! is_array($data)) {
+            return new self;
+        }
+
+        return self::fromArray($data);
     }
 
     /**
@@ -146,68 +209,6 @@ class FilterCollection implements ArrayAccess, Countable, IteratorAggregate, Arr
     }
 
     /**
-     * Create a collection from a query string.
-     */
-    public static function fromQueryString(string $queryString): self
-    {
-        parse_str($queryString, $parsed);
-
-        if (! isset($parsed[self::$queryParameter]) || ! is_array($parsed[self::$queryParameter])) {
-            return new self();
-        }
-
-        return self::fromArray($parsed[self::$queryParameter]);
-    }
-
-    /**
-     * Create a collection from an array of filter arrays.
-     *
-     * @param  array<int, array{column: string, operator: string, value?: mixed}>  $data
-     */
-    public static function fromArray(array $data): self
-    {
-        $filters = [];
-
-        foreach ($data as $filterData) {
-            if (isset($filterData['column'], $filterData['operator'])) {
-                $filters[] = Filter::fromArray($filterData);
-            }
-        }
-
-        return new self($filters);
-    }
-
-    /**
-     * Create a collection from a Laravel request.
-     */
-    public static function fromRequest(?Request $request = null): self
-    {
-        $request = $request ?? request();
-
-        $data = $request->input(self::$queryParameter, []);
-
-        if (! is_array($data)) {
-            return new self();
-        }
-
-        return self::fromArray($data);
-    }
-
-    /**
-     * Create a collection from JSON.
-     */
-    public static function fromJson(string $json): self
-    {
-        $data = json_decode($json, true);
-
-        if (! is_array($data)) {
-            return new self();
-        }
-
-        return self::fromArray($data);
-    }
-
-    /**
      * Convert to JSON.
      */
     public function toJson(int $options = 0): string
@@ -252,7 +253,7 @@ class FilterCollection implements ArrayAccess, Countable, IteratorAggregate, Arr
      */
     public function getIterator(): Traversable
     {
-        return new \ArrayIterator($this->filters);
+        return new ArrayIterator($this->filters);
     }
 
     /**

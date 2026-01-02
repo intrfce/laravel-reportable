@@ -2,7 +2,6 @@
 
 use Intrfce\LaravelReportable\Enums\FilterComparator;
 use Intrfce\LaravelReportable\Filter;
-use Intrfce\LaravelReportable\Tests\Fixtures\Models\User;
 use Intrfce\LaravelReportable\Tests\Fixtures\Reportables\UserReport;
 
 beforeEach(function () {
@@ -29,7 +28,7 @@ it('can create filters with static helper methods', function () {
 });
 
 it('applies equals filter correctly', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::equals('status', 'active'),
     ]);
 
@@ -41,7 +40,7 @@ it('applies equals filter correctly', function () {
 });
 
 it('applies not equals filter correctly', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::notEquals('status', 'active'),
     ]);
 
@@ -53,7 +52,7 @@ it('applies not equals filter correctly', function () {
 });
 
 it('applies contains filter correctly', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::contains('name', 'John'),
     ]);
 
@@ -65,7 +64,7 @@ it('applies contains filter correctly', function () {
 });
 
 it('applies starts with filter correctly', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::startsWith('email', 'j'),
     ]);
 
@@ -77,7 +76,7 @@ it('applies starts with filter correctly', function () {
 });
 
 it('applies in filter correctly', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::in('role', ['admin', 'editor']),
     ]);
 
@@ -89,7 +88,7 @@ it('applies in filter correctly', function () {
 });
 
 it('applies not in filter correctly', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::notIn('role', ['admin', 'editor']),
     ]);
 
@@ -101,7 +100,7 @@ it('applies not in filter correctly', function () {
 });
 
 it('applies multiple filters correctly', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::equals('status', 'active'),
         Filter::equals('role', 'user'),
     ]);
@@ -114,7 +113,7 @@ it('applies multiple filters correctly', function () {
 });
 
 it('can add filters one at a time', function () {
-    $report = (new UserReport())
+    $report = (new UserReport)
         ->addFilter(Filter::equals('status', 'active'))
         ->addFilter(Filter::equals('role', 'admin'));
 

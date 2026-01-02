@@ -14,7 +14,7 @@ beforeEach(function () {
 });
 
 it('exports data to csv file', function () {
-    $report = new UserReport();
+    $report = new UserReport;
     $export = ReportExport::fromReportable($report);
 
     // Manually run the job instead of using queue
@@ -24,7 +24,7 @@ it('exports data to csv file', function () {
 });
 
 it('exports with correct headers from mapHeaders', function () {
-    $report = new UserReport();
+    $report = new UserReport;
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -36,7 +36,7 @@ it('exports with correct headers from mapHeaders', function () {
 });
 
 it('exports all rows', function () {
-    $report = new UserReport();
+    $report = new UserReport;
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -49,7 +49,7 @@ it('exports all rows', function () {
 });
 
 it('exports filtered data', function () {
-    $report = (new UserReport())->withFilters([
+    $report = (new UserReport)->withFilters([
         Filter::equals('status', 'active'),
     ]);
 
@@ -73,7 +73,7 @@ it('exports with custom filename', function () {
 });
 
 it('exports to custom path', function () {
-    $report = (new UserReport())->toPath('custom/exports');
+    $report = (new UserReport)->toPath('custom/exports');
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -82,7 +82,7 @@ it('exports to custom path', function () {
 });
 
 it('exports joined table data correctly', function () {
-    $report = new OrderSummaryReport();
+    $report = new OrderSummaryReport;
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -100,7 +100,7 @@ it('exports joined table data correctly', function () {
 });
 
 it('exports with filters on joined data', function () {
-    $report = (new OrderSummaryReport())->withFilters([
+    $report = (new OrderSummaryReport)->withFilters([
         Filter::equals('order_status', 'completed'),
     ]);
 
@@ -119,7 +119,7 @@ it('exports with filters on joined data', function () {
 it('updates progress during chunked export', function () {
     config(['laravel-reportable.chunk_size' => 2]);
 
-    $report = new UserReport();
+    $report = new UserReport;
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -130,7 +130,7 @@ it('updates progress during chunked export', function () {
 });
 
 it('marks export as completed after successful run', function () {
-    $report = new UserReport();
+    $report = new UserReport;
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -142,7 +142,7 @@ it('marks export as completed after successful run', function () {
 });
 
 it('exports using all at once mode', function () {
-    $report = (new UserReport())->allAtOnce();
+    $report = (new UserReport)->allAtOnce();
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -155,7 +155,7 @@ it('exports using all at once mode', function () {
 });
 
 it('creates directory if it does not exist', function () {
-    $report = (new UserReport())->toPath('deep/nested/path');
+    $report = (new UserReport)->toPath('deep/nested/path');
     $export = ReportExport::fromReportable($report);
 
     (new ProcessReportExport($export))->handle();
@@ -166,7 +166,7 @@ it('creates directory if it does not exist', function () {
 it('exports with unmapped headers falling back to column names', function () {
     // UserReport has mapHeaders, but ProductReport without category still exports
     // Let's test with a report that has partial mappings
-    $report = new ProductReport();
+    $report = new ProductReport;
 
     $export = ReportExport::fromReportable($report);
     (new ProcessReportExport($export))->handle();

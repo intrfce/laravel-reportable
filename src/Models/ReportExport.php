@@ -23,13 +23,6 @@ class ReportExport extends Model
         'total_rows' => 'integer',
     ];
 
-    protected static function booted(): void
-    {
-        static::created(function (ReportExport $export) {
-            $export->dispatchJob();
-        });
-    }
-
     /**
      * Create a new export from a Reportable instance.
      */
@@ -46,6 +39,13 @@ class ReportExport extends Model
             'output_disk' => $reportable->disk(),
             'output_path' => $reportable->outputPath(),
         ]);
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (ReportExport $export) {
+            $export->dispatchJob();
+        });
     }
 
     /**
