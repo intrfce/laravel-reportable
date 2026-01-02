@@ -3,7 +3,48 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/intrfce/laravel-reportable.svg?style=flat-square)](https://packagist.org/packages/intrfce/laravel-reportable)
 [![Total Downloads](https://img.shields.io/packagist/dt/intrfce/laravel-reportable.svg?style=flat-square)](https://packagist.org/packages/intrfce/laravel-reportable)
 
-Run large queries and export them to CSV files for reports in Laravel. Supports queued exports, chunked processing, filters, and automatic retry functionality.
+Reportable is a package I've put together to facilitate running large reports on a SQL-like database, using jobs in your
+queue.
+
+### Features and assumptions
+
+#### Opinionated workflow
+
+The idea is basic: exports are classes that define a query and can be passed parameters and filters.
+
+When you dispatch an export to the queue, a Model is saved to the database with the export's metadata, and can be used
+to track it's progress, any errors that might occur, and allow it to be retried easily.
+
+#### Query performance is your concern
+
+Yes, you read that right, i'm touting that as a feature. The package doesn't make any assumptions or guesses, nor any
+eloquent "magic" applied for you to your queries.
+
+Databases, and data structure, are different across so many applications, that the package doesn't make any assumptions
+or try to take any shortcuts for you.
+
+#### Supports both Eloquent and Query Builder queries
+
+You can use Eloquent to build queries with this package, it's supported, but our specifice use case was for users with
+more advanced needs, using Laravel's Query Builder.
+
+The underlying query is _always_ parsed to SQL (for the moment) and stored as SQL, so it can be retried easily.
+
+#### Chunking is off by default, but available.
+
+The idea is that you build queries that are efficient enough to run in one go, while the output is streamed directly to
+a CSV file on the filesystem.
+
+But, chunking is built in as a feature in the case you're exporting extremely large amounts of data, or running a
+slightly less than ideal query that might exceed the timeout limits of your queues.
+
+#####       
+
+### Database support.
+
+The hope is to fully support all drivers that Laravel supports - as the package is mainly a facilitator and wrapper that
+takes database results and exports them to CSV in
+an opinionated way, rather than dictating query logic, structure, or syntax.
 
 ## Installation
 
@@ -553,3 +594,5 @@ If you discover any security related issues, please email dan@danmatthews.me ins
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+
