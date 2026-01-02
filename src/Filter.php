@@ -91,4 +91,34 @@ class Filter
     {
         return new self($column, FilterComparator::IsNotNull);
     }
+
+    /**
+     * Convert the filter to an array representation.
+     *
+     * @return array{column: string, operator: string, value: mixed}
+     */
+    public function toArray(): array
+    {
+        return [
+            'column' => $this->column,
+            'operator' => $this->comparator->value,
+            'value' => $this->value,
+        ];
+    }
+
+    /**
+     * Create a filter from an array representation.
+     *
+     * @param  array{column: string, operator: string, value?: mixed}  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        $comparator = FilterComparator::from($data['operator']);
+
+        return new self(
+            column: $data['column'],
+            comparator: $comparator,
+            value: $data['value'] ?? null,
+        );
+    }
 }

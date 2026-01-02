@@ -158,6 +158,128 @@ class UserExport extends Reportable
 }
 ```
 
+## Filter Collections
+
+Use `FilterCollection` to group filters and serialize them to/from URLs and requests.
+
+### Creating a Collection
+
+```php
+use Intrfce\LaravelReportable\FilterCollection;
+use Intrfce\LaravelReportable\Filter;
+
+$filters = FilterCollection::make([
+    Filter::equals('status', 'active'),
+    Filter::greaterThan('created_at', '2024-01-01'),
+]);
+
+// Or build it fluently
+$filters = FilterCollection::make()
+    ->add(Filter::equals('status', 'active'))
+    ->add(Filter::contains('name', 'john'));
+
+// Use with a reportable
+$export = (new UserExport())
+    ->withFilters($filters)
+    ->dispatch();
+```
+
+### Serializing to URL
+
+```php
+$filters = FilterCollection::make([
+    Filter::equals('status', 'active'),
+    Filter::in('role', ['admin', 'editor']),
+]);
+
+// Get query string
+$queryString = $filters->toQueryString();
+// filters[0][column]=status&filters[0][operator]=%3D&filters[0][value]=active&...
+
+// Append to URL
+$url = $filters->appendToUrl('https://example.com/reports');
+// https://example.com/reports?filters[0][column]=status&...
+
+// Get array for Laravel's route() helper
+$url = route('reports.index', $filters->toQueryArray());
+```
+
+### Reading from Request
+
+```php
+// In a controller
+public function index(Request $request)
+{
+    $filters = FilterCollection::fromRequest($request);
+
+    $export = (new UserExport())
+        ->withFilters($filters)
+        ->dispatch();
+
+    return redirect()->route('exports.show', $export);
+}
+```
+
+### Reading from Query String
+
+```php
+$filters = FilterCollection::fromQueryString($queryString);
+```
+
+### JSON Serialization
+
+```php
+// To JSON
+$json = $filters->toJson();
+
+// From JSON
+$filters = FilterCollection::fromJson($json);
+
+// Also works with json_encode()
+$json = json_encode($filters);
+```
+
+### Collection Methods
+
+```php
+$filters = FilterCollection::make([...]);
+
+// Check if empty
+$filters->isEmpty();
+$filters->isNotEmpty();
+
+// Count filters
+$filters->count();
+count($filters); // Also works
+
+// Get filters for a column
+$statusFilters = $filters->forColumn('status');
+$filters->hasColumn('status'); // true/false
+
+// Merge collections
+$combined = $filters->merge($otherFilters);
+
+// Iterate
+foreach ($filters as $filter) {
+    echo $filter->column;
+}
+
+// Array access
+$first = $filters[0];
+```
+
+### Preserving Filters in Views
+
+```blade
+{{-- Generate a URL with current filters --}}
+<a href="{{ route('reports.export', $filters->toQueryArray()) }}">
+    Export with Filters
+</a>
+
+{{-- Add filters to pagination links --}}
+{{ $users->appends($filters->toQueryArray())->links() }}
+```
+
 ## Constructor Arguments
 
 Pass arguments to your reportable for dynamic queries:

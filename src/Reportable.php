@@ -156,11 +156,13 @@ abstract class Reportable
     /**
      * Set the filters to apply to the query.
      *
-     * @param  array<int, Filter>  $filters
+     * @param  array<int, Filter>|FilterCollection  $filters
      */
-    public function withFilters(array $filters): static
+    public function withFilters(array|FilterCollection $filters): static
     {
-        $this->filters = $filters;
+        $this->filters = $filters instanceof FilterCollection
+            ? $filters->all()
+            : $filters;
 
         return $this;
     }
@@ -183,6 +185,14 @@ abstract class Reportable
     public function getFilters(): array
     {
         return $this->filters;
+    }
+
+    /**
+     * Get the filters as a FilterCollection.
+     */
+    public function getFilterCollection(): FilterCollection
+    {
+        return new FilterCollection($this->filters);
     }
 
     /**
