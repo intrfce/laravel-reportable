@@ -16,7 +16,7 @@
   "license": "MIT",
   "devDependencies": {
     "husky": "^8.0.0",
-    "lint-staged": "^15.0.2"
+    "lint-staged": "^15.5.2"
   },
   "lint-staged": {
     "**/*.php*": [
